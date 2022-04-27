@@ -1,0 +1,62 @@
+
+import rospy
+import numpy
+from cv2 import namedWindow, cvtColor, imshow
+from cv2 import destroyAllWindows, startWindowThread
+from cv2 import waitKey
+from cv2 import cvtColor, COLOR_BGR2HSV, inRange, bitwise_and
+
+from sensor_msgs.msg import Image
+from cv_bridge import CvBridge
+
+class image_converter:
+    def __init__(self):
+        self.bridge = CvBridge()
+        self.image_sub = rospy.Subscriber("/camera/rgb/image_raw", Image, self.image_callback)
+
+    def image_callback(self, data):
+        namedWindow("Image window")
+        namedWindow("Yellow")
+        namedWindow("Blue")
+        namedWindow("Red")
+        namedWindow("Green")
+        cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        hsv = cvtColor(cv_image, COLOR_BGR2HSV)
+
+        #lower_yellow = numpy.array([10,60,170])
+        #upper_yellow = numpy.array([255,255,255])
+
+        lower_yellow = numpy.array([20,100,100])
+        upper_yellow = numpy.array([30,255,255])
+
+        lower_blue = numpy.array([100,150,0])
+        upper_blue = numpy.array([140,255,255])
+
+        lower_red = numpy.array([0,120,70])
+        upper_red = numpy.array([10,255,255])
+
+        lower_green = numpy.array([36,25,25])
+        upper_green = numpy.array([86,255,255])
+
+        yellow_mask = inRange(hsv, lower_yellow,upper_yellow)
+        blue_mask = inRange(hsv, lower_blue, upper_blue)
+        red_mask = inRange(hsv, lower_red, upper_red)
+        green_mask = inRange(hsv, lower_green, upper_green)
+        bitwise_and(cv_image, cv_image, cv_image, mask = yellow_mask )
+        bitwise_and(cv_image, cv_image, cv_image, mask = blue_mask )
+        bitwise_and(cv_image, cv_image, cv_image, mask = red_mask)
+        bitwise_and(cv_image, cv_image, cv_image, mask = green_mask)
+
+        imshow("Yellow", yellow_mask)
+        imshow("Blue", blue_mask)
+        imshow("Red", red_mask)
+        imshow("Green", green_mask)
+
+
+
+        imshow("Image window",cv_image)
+        waitKey(1)
+
+rospy.init_node('image_converter')
+ic = image_converter()
+rospy.spin()
